@@ -1,0 +1,175 @@
+version: 2
+
+models:
+  - name: stg_orders
+    description: Current backend order rows, cast and normalized without dropping records.
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+          - unique
+      - name: buyer_id
+        tests:
+          - not_null
+      - name: item_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_items')
+              field: item_id
+      - name: status
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - placed
+                - paid
+                - received_at_authentication
+                - authenticated
+                - shipped_to_buyer
+                - delivered
+                - completed
+                - cancelled
+                - rejected_at_authentication
+                - returned
+
+  - name: stg_order_status_events
+    description: Event feed deduplicated by event_id; it is not assumed complete.
+    columns:
+      - name: event_id
+        tests:
+          - not_null
+          - unique
+      - name: order_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_orders')
+              field: order_id
+      - name: event_ts
+        tests:
+          - not_null
+
+  - name: stg_items
+    columns:
+      - name: item_id
+        tests:
+          - not_null
+          - unique
+
+  - name: stg_fx_rates
+    columns:
+      - name: rate_date
+        tests:
+          - not_null
+      - name: currency
+        tests:
+          - not_null
+      - name: rate_to_eur
+        tests:
+          - not_null
+
+  - name: stg_finance_monthly_gmv
+    columns:
+      - name: month_start
+        tests:
+          - not_null
+          - unique
+      - name: reported_gmv_eur
+        tests:
+          - not_null
+      - name: closed_on
+        tests:
+          - not_null
+
+  - name: int_orders_enriched
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+          - unique
+      - name: gmv_eur
+        tests:
+          - not_null
+
+  - name: int_buyer_order_features
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+          - unique
+      - name: buyer_segment_at_order
+        tests:
+          - not_null
+          - accepted_values:
+              values: [new, returning, vip]
+
+  - name: int_order_risk
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+          - unique
+      - name: is_high_risk
+        tests:
+          - not_null
+
+  - name: dim_buyers
+    description: Current buyer lifetime summary; not an as-of-order dimension.
+    columns:
+      - name: buyer_id
+        tests:
+          - not_null
+          - unique
+      - name: buyer_segment_current
+        tests:
+          - not_null
+          - accepted_values:
+              values: [new, returning, vip]
+
+  - name: fct_orders
+    description: One current-state row per order, including both as-of-order and current buyer segments.
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+          - unique
+      - name: buyer_segment
+        description: Buyer segment at this order, derived only from prior submitted orders.
+        tests:
+          - not_null
+          - accepted_values:
+              values: [new, returning, vip]
+      - name: is_high_risk
+        tests:
+          - not_null
+
+  - name: mart_ops_daily_gmv
+    description: Current operational metrics by order date, item category, country, and order-time buyer segment.
+    columns:
+      - name: order_date
+        tests:
+          - not_null
+      - name: category
+        tests:
+          - not_null
+      - name: buyer_country
+        tests:
+          - not_null
+      - name: buyer_segment
+        tests:
+          - not_null
+
+  - name: mart_finance_monthly_gmv
+    description: Finance-reported close values, retained as the authoritative frozen monthly series.
+    columns:
+      - name: month_start
+        tests:
+          - not_null
+          - unique
+      - name: reported_gmv_eur
+        tests:
+          - not_null
+      - name: closed_on
+        tests:
+          - not_null

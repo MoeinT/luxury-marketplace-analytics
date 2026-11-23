@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reproduce the order GMV close-drift and event-history analysis from data/."""
+"""Reproduce the order GMV close-drift and event-history analysis from dbt seeds."""
 
 import csv
 import math
@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA = ROOT / "data"
+DATA = ROOT / "dbt" / "seeds"
 CENT = Decimal("0.01")
 OPERATIONAL_STATUSES = {
     "paid",

@@ -24,7 +24,7 @@ python ../analysis/task1_analysis.py
 `dbt build` loads the five CSVs as seeds, creates the models, captures the
 `orders_snapshot`, and runs data tests. The first run may take about a minute
 while Docker downloads images and loads the event seed. The dbt project and
-`profiles.yml` are in this directory; the seed files remain in `../data`.
+`profiles.yml` are in this directory; the seed files are in `seeds/`.
 `profiles.yml` reads credentials from environment variables; no database
 password is committed.
 The host database is available on `127.0.0.1:54329`.

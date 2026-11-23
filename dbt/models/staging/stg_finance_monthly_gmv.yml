@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: stg_finance_monthly_gmv
+    description: >-
+      Finance-reported monthly GMV and close dates, standardized from the
+      supplied Finance file. Grain: one row per reported month.
+    columns:
+      - name: month_start
+        data_type: date
+        description: First day of the month represented by the Finance report.
+        data_tests:
+          - not_null
+          - unique
+      - name: reported_gmv_eur
+        data_type: numeric(16, 2)
+        description: GMV in euros reported by Finance for the month.
+        data_tests:
+          - not_null
+      - name: closed_on
+        data_type: date
+        description: Date on which Finance closed the reporting month.
+        data_tests:
+          - not_null

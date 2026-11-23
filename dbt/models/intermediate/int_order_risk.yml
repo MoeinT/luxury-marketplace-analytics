@@ -1,0 +1,29 @@
+version: 2
+
+models:
+  - name: int_order_risk
+    description: >-
+      Order-time fraud screening indicator based on buyer order history and
+      item price. Grain: one row per order. This is a simple business rule,
+      not a prediction or a complete fraud assessment.
+    columns:
+      - name: order_id
+        data_type: text
+        description: Unique order identifier.
+        data_tests:
+          - not_null
+          - unique
+      - name: buyer_id
+        data_type: text
+        description: Identifier of the buyer who placed the order.
+      - name: is_first_order
+        data_type: boolean
+        description: Whether the buyer had no earlier submitted order.
+      - name: gmv_eur
+        data_type: numeric(16, 2)
+        description: Order item price in euros, excluding shipping.
+      - name: is_high_risk
+        data_type: boolean
+        description: True when this is the buyer's first order and its item price exceeds EUR 1,000.
+        data_tests:
+          - not_null

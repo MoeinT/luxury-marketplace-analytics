@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: dim_buyers
+    description: >-
+      Current buyer profile derived from all submitted orders and their latest
+      statuses. Grain: one row per buyer. The current segment is not the
+      buyer's segment at the time of a past order.
+    columns:
+      - name: buyer_id
+        data_type: text
+        description: Unique buyer identifier.
+        data_tests:
+          - not_null
+          - unique
+      - name: first_order_at
+        data_type: timestamp without time zone
+        description: Creation timestamp of the buyer's earliest submitted order, recorded in UTC.
+      - name: lifetime_orders
+        data_type: bigint
+        description: Number of submitted orders by the buyer, including all statuses.
+      - name: lifetime_net_gmv_eur
+        data_type: numeric(16, 2)
+        description: >-
+          Sum of order item prices in euros using current statuses, excluding
+          cancelled, authentication-rejected, and returned orders. Includes
+          placed orders and excludes shipping; this differs from operational net GMV.
+      - name: buyer_segment_current
+        data_type: text
+        description: >-
+          Current buyer segment: new for exactly one lifetime order; otherwise
+          vip for lifetime net GMV of at least EUR 5,000, or returning.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [new, returning, vip]

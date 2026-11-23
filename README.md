@@ -6,40 +6,123 @@ data is synthetic. No employer or personal data is used.
 
 ## Run locally
 
-Requirements: Docker with Compose. The dbt runner uses `dbt-core==1.10.0` and
-`dbt-postgres==1.9.0`;
-PostgreSQL runs in `postgres:16`.
+**Requirements:** Docker with Compose and Python 3. Run all commands below
+from the repository root. Docker downloads PostgreSQL 16, CloudBeaver, and
+the dbt image on the first run; dbt itself does not need to be installed on
+your laptop.
 
-From the repository root, create a local-only password file (already ignored
-by Git). Then run the dbt workflow from `dbt/`:
+### 1. Configure and start
 
-```sh
-python -c 'from pathlib import Path; import secrets; p=Path(".env"); p.write_text("POSTGRES_PASSWORD="+secrets.token_urlsafe(24)+"\n") if not p.exists() else None; p.chmod(0o600)'
-cd dbt
-docker compose -f ../docker-compose.yml --env-file ../.env up -d postgres
-docker compose -f ../docker-compose.yml --env-file ../.env run --rm dbt
-python ../analysis/task1_analysis.py
-```
-
-`dbt build` loads the five CSVs as seeds, creates the models, captures the
-`orders_snapshot`, and runs data tests. The first run may take about a minute
-while Docker downloads images and loads the event seed. The dbt project and
-`profiles.yml` are in this directory; the seed files are in `seeds/`.
-`profiles.yml` reads credentials from environment variables; no database
-password is committed.
-The host database is available on `127.0.0.1:54329`.
-
-Useful commands:
+Create a local database password in `.env`, then start the services:
 
 ```sh
-docker compose -f ../docker-compose.yml --env-file ../.env run --rm dbt test --profiles-dir .
-docker compose -f ../docker-compose.yml --env-file ../.env exec -T postgres psql -U dbt -d luxury_analytics -P pager=off
-docker compose -f ../docker-compose.yml --env-file ../.env down
+python3 -c 'from pathlib import Path; import secrets; p=Path(".env"); p.write_text("POSTGRES_PASSWORD="+secrets.token_urlsafe(24)+"\n") if not p.exists() else None; p.chmod(0o600)'
+docker compose --env-file .env up --build -d
 ```
 
-`docker compose down` stops the service but preserves its named data volume.
-The monthly Finance model is deliberately append-only; do not use
-`--full-refresh` against a production close table.
+`.env` is ignored by Git; keep it private. The command does not overwrite an
+existing file. Keep the same password when reusing the database volume:
+changing `.env` alone does not change the password already stored in
+PostgreSQL.
+
+The `postgres` and `pgadmin` services stay running. The service named
+`pgadmin` actually runs **CloudBeaver**, a browser-based SQL client. `dbt` is
+a one-shot service: it waits for PostgreSQL, runs `dbt build`, and exits.
+That build loads the CSV seeds, creates models and the snapshot, and runs
+data tests. Allow time for the first image download and build.
+
+Check progress and the final dbt result:
+
+```sh
+docker compose --env-file .env ps -a
+docker compose --env-file .env logs --tail=80 dbt
+docker compose --env-file .env exec postgres pg_isready -U dbt -d luxury_analytics
+```
+
+PostgreSQL should be healthy and dbt should finish with exit code 0; check
+the dbt log for its build and test summary. If needed, inspect service logs
+with `docker compose --env-file .env logs --tail=80 postgres pgadmin`.
+
+### 2. Explore the database
+
+Open [http://localhost:8080](http://localhost:8080) for CloudBeaver. On first
+use, complete the setup screen with a server name of your choice, allowed
+server URL `http://localhost:8080`, and the default session lifetime. Then
+create a **PostgreSQL** connection:
+
+| Field | Value |
+|---|---|
+| Host | `postgres` |
+| Port | `5432` |
+| Database | `luxury_analytics` |
+| Username | `dbt` |
+| Password | `POSTGRES_PASSWORD` from your local `.env` |
+
+Use `postgres`, not `localhost`, as the host **inside CloudBeaver**. Test
+and save the connection, open a new SQL script, and run:
+
+```sql
+SELECT * FROM marts.fct_orders LIMIT 10;
+SELECT * FROM marts.mart_finance_monthly_gmv ORDER BY month_start;
+```
+
+The schemas include `raw`, `staging`, `intermediate`, `marts`, and `history`.
+CloudBeaver's own configuration is stored in its container and may need to be
+set up again if the container is recreated. In a remote VS Code environment,
+open forwarded port 8080 instead of your laptop's localhost and use the
+forwarded address in CloudBeaver's allowed server URLs.
+
+For terminal access instead, connect with `psql`:
+
+```sh
+docker compose --env-file .env exec postgres psql -U dbt -d luxury_analytics
+```
+
+Within `psql`, use `\dn` to list schemas, `\dt marts.*` to list mart tables,
+and `\q` to exit. To open a shell in the PostgreSQL container instead, run
+`docker compose --env-file .env exec postgres sh` and type `exit` when done.
+From a host database client, use `127.0.0.1:54329`, database
+`luxury_analytics`, user `dbt`, and the same password.
+
+### 3. Develop and rerun
+
+The SQL models and their per-model YAML documentation and generic tests are
+in [`dbt/models/`](dbt/models/); singular SQL data tests are in
+[`dbt/tests/`](dbt/tests/). The input CSVs are in [`dbt/seeds/`](dbt/seeds/).
+The reproducible analysis reads those same files:
+
+```sh
+python3 analysis/task1_analysis.py
+```
+
+Run dbt again, or select a specific model:
+
+```sh
+# Full build: seeds, models, snapshots, and tests
+docker compose --env-file .env run --rm dbt build --profiles-dir .
+
+# Build one model and its selected tests; upstream relations must already exist
+docker compose --env-file .env run --rm dbt build --select dim_buyers --profiles-dir .
+
+# Include upstream dependencies, or run the data tests alone
+docker compose --env-file .env run --rm dbt build --select +dim_buyers --profiles-dir .
+docker compose --env-file .env run --rm dbt test --profiles-dir .
+```
+
+One-off `run --rm` commands print their logs directly in the terminal and
+remove their temporary container. Detailed dbt logs are also written to
+`dbt/logs/dbt.log`, and manifest and run results to `dbt/target/`.
+The Finance model is append-only during incremental builds: avoid
+`--full-refresh` against a production close table because it rebuilds frozen
+values from the source.
+
+### 4. Stop the services
+
+```sh
+docker compose --env-file .env down
+```
+
+This preserves the named PostgreSQL data volume for the next run.
 
 ## Task 1 — findings
 

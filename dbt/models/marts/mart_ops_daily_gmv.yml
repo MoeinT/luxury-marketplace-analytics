@@ -1,0 +1,53 @@
+version: 2
+
+models:
+  - name: mart_ops_daily_gmv
+    description: >-
+      Current operational order metrics, including recent orders. Grain: one
+      row per order creation date, item category, buyer country, and buyer
+      segment at order creation. Metrics are provisional and change with order
+      status; they are not frozen Finance close values.
+    columns:
+      - name: order_date
+        data_type: date
+        description: UTC date on which the orders were created.
+        data_tests:
+          - not_null
+      - name: category
+        data_type: text
+        description: Category of the purchased items.
+        data_tests:
+          - not_null
+      - name: buyer_country
+        data_type: text
+        description: Buyer country code.
+        data_tests:
+          - not_null
+      - name: buyer_segment
+        data_type: text
+        description: Buyer segment at order creation, based on prior submitted orders.
+        data_tests:
+          - not_null
+      - name: orders
+        data_type: bigint
+        description: Number of submitted orders in the group, regardless of current status.
+      - name: cancelled_orders
+        data_type: bigint
+        description: Number of orders in the group currently marked cancelled.
+      - name: authentication_rejections
+        data_type: bigint
+        description: Number of orders in the group currently rejected at authentication.
+      - name: returned_orders
+        data_type: bigint
+        description: Number of orders in the group currently marked returned.
+      - name: cancellation_rate
+        data_type: numeric
+        description: Current cancelled orders divided by all orders in the group, rounded to four decimal places.
+      - name: net_gmv_eur_operational
+        data_type: numeric(18, 2)
+        description: Sum of current operational net item GMV in euros, excluding shipping.
+      - name: cancelled_gmv_eur
+        data_type: numeric(18, 2)
+        description: >-
+          Sum of item prices in euros for currently cancelled orders; null when
+          the group has no cancelled orders.

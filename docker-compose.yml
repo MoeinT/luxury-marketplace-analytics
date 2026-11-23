@@ -35,13 +35,13 @@ services:
   pgadmin:
     image: dbeaver/cloudbeaver:latest
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:8080:8978"
     environment:
       CLOUDBEAVER_SERVER_PUBLIC_URL: "http://localhost:8080"
     depends_on:
       - postgres
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8978/"]
       interval: 10s
       timeout: 5s
       retries: 5

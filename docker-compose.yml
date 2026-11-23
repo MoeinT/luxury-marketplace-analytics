@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: luxury_analytics
+      POSTGRES_USER: dbt
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your shell}
+    ports:
+      - "127.0.0.1:54329:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d luxury_analytics"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  dbt:
+    build:
+      context: ./dbt
+      dockerfile: Dockerfile.dbt
+    working_dir: /workspace/dbt
+    volumes:
+      - .:/workspace
+    environment:
+      DBT_HOST: postgres
+      DBT_PORT: "5432"
+      DBT_USER: dbt
+      DBT_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your shell}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["build", "--profiles-dir", "."]
+
+  pgadmin:
+    image: dbeaver/cloudbeaver:latest
+    ports:
+      - "127.0.0.1:8080:8978"
+    environment:
+      CLOUDBEAVER_SERVER_PUBLIC_URL: "http://localhost:8080"
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8978/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

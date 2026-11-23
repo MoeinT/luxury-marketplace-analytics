@@ -1,0 +1,81 @@
+version: 2
+
+models:
+  - name: fct_orders
+    description: >-
+      Current-state order fact for operational analysis, enriched with item,
+      buyer, currency, and risk attributes. Grain: one row per order. Values
+      based on current status can change after the order month closes and
+      should not replace the Finance-reported close.
+    columns:
+      - name: order_id
+        data_type: text
+        description: Unique order identifier.
+        data_tests:
+          - not_null
+          - unique
+      - name: buyer_id
+        data_type: text
+        description: Identifier of the buyer who placed the order.
+      - name: seller_id
+        data_type: text
+        description: Identifier of the seller offering the item.
+      - name: item_id
+        data_type: text
+        description: Identifier of the purchased item.
+      - name: created_at
+        data_type: timestamp without time zone
+        description: Order creation timestamp, recorded in UTC.
+      - name: updated_at
+        data_type: timestamp without time zone
+        description: Timestamp of the latest update to the order, recorded in UTC.
+      - name: status
+        data_type: text
+        description: Latest order status in the backend.
+      - name: category
+        data_type: text
+        description: Category of the purchased item.
+      - name: brand
+        data_type: text
+        description: Brand of the purchased item.
+      - name: buyer_country
+        data_type: text
+        description: Buyer country code.
+      - name: currency
+        data_type: text
+        description: Order currency code.
+      - name: item_price
+        data_type: numeric(12, 2)
+        description: Item price in the order currency, excluding shipping.
+      - name: shipping_fee
+        data_type: numeric(12, 2)
+        description: Shipping fee in the order currency.
+      - name: gmv_eur
+        data_type: numeric(16, 2)
+        description: Item price converted to euros at the order-date rate, regardless of status.
+      - name: shipping_fee_eur
+        data_type: numeric(16, 2)
+        description: Shipping fee converted to euros at the order-date rate.
+      - name: buyer_segment
+        data_type: text
+        description: >-
+          Segment at order creation, based only on prior submitted orders:
+          new, returning, or vip.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [new, returning, vip]
+      - name: buyer_segment_current
+        data_type: text
+        description: Current buyer segment based on lifetime orders and current-status GMV.
+      - name: is_high_risk
+        data_type: boolean
+        description: True when this is the buyer's first order and its item price exceeds EUR 1,000.
+        data_tests:
+          - not_null
+      - name: net_gmv_eur_operational
+        data_type: numeric(16, 2)
+        description: >-
+          Item price in euros for orders currently paid, in authentication,
+          shipped, delivered, or completed; zero for other statuses. Excludes
+          shipping and changes as the order status changes.

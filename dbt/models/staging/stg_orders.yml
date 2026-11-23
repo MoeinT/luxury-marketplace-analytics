@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: stg_orders
+    description: >-
+      Current order records from the marketplace backend, with standardized
+      identifiers, status, currency, and country. Grain: one row per order.
+      Status and updated_at are overwritten by the source, so this model does
+      not provide historical order states.
+    columns:
+      - name: order_id
+        data_type: text
+        description: Unique order identifier.
+        data_tests:
+          - not_null
+          - unique
+      - name: buyer_id
+        data_type: text
+        description: Identifier of the buyer who placed the order.
+        data_tests:
+          - not_null
+      - name: seller_id
+        data_type: text
+        description: Identifier of the seller offering the item.
+      - name: item_id
+        data_type: text
+        description: Identifier of the purchased item.
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_items')
+              field: item_id
+      - name: created_at
+        data_type: timestamp without time zone
+        description: Order creation timestamp, recorded in UTC.
+      - name: status
+        data_type: text
+        description: Latest order status in the backend, normalized to lowercase.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [placed, paid, received_at_authentication, authenticated, shipped_to_buyer, delivered, completed, cancelled, rejected_at_authentication, returned]
+      - name: updated_at
+        data_type: timestamp without time zone
+        description: Timestamp of the latest update to the order, recorded in UTC.
+      - name: item_price
+        data_type: numeric(12, 2)
+        description: Item price in the order currency, excluding shipping.
+      - name: shipping_fee
+        data_type: numeric(12, 2)
+        description: Shipping fee in the order currency.
+      - name: currency
+        data_type: text
+        description: Order currency code, normalized to uppercase.
+      - name: buyer_country
+        data_type: text
+        description: Buyer country code, normalized to uppercase.

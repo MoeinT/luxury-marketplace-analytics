@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: stg_items
+    description: >-
+      Marketplace item attributes with standardized identifiers and categories.
+      Grain: one row per item.
+    columns:
+      - name: item_id
+        data_type: text
+        description: Unique item identifier.
+        data_tests:
+          - not_null
+          - unique
+      - name: category
+        data_type: text
+        description: Item category, normalized to lowercase.
+      - name: brand
+        data_type: text
+        description: Item brand as supplied by the source.

@@ -1,0 +1,13 @@
+luxury_marketplace_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('DBT_HOST', '127.0.0.1') }}"
+      port: "{{ env_var('DBT_PORT', '54329') | int }}"
+      user: "{{ env_var('DBT_USER', 'dbt') }}"
+      password: "{{ env_var('DBT_PASSWORD') }}"
+      dbname: luxury_analytics
+      schema: analytics
+      threads: 4
+      connect_timeout: 10

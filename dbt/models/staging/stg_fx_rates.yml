@@ -1,0 +1,23 @@
+version: 2
+
+models:
+  - name: stg_fx_rates
+    description: >-
+      Daily currency conversion rates used to express order amounts in euros.
+      Grain: one row per rate date and currency.
+    columns:
+      - name: rate_date
+        data_type: date
+        description: Date for which the exchange rate applies.
+        data_tests:
+          - not_null
+      - name: currency
+        data_type: text
+        description: Source currency code, normalized to uppercase.
+        data_tests:
+          - not_null
+      - name: rate_to_eur
+        data_type: numeric(12, 4)
+        description: Multiplier converting one unit of the source currency to euros.
+        data_tests:
+          - not_null

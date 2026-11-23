@@ -1,0 +1,45 @@
+version: 2
+
+models:
+  - name: int_buyer_order_features
+    description: >-
+      Buyer features calculated for each order using only earlier submitted
+      orders, ordered by creation timestamp and order ID as a tie-breaker.
+      Grain: one row per order. Prior GMV includes all order statuses and does
+      not represent historical net GMV.
+    columns:
+      - name: order_id
+        data_type: text
+        description: Unique order identifier.
+        data_tests:
+          - not_null
+          - unique
+      - name: buyer_id
+        data_type: text
+        description: Identifier of the buyer who placed the order.
+      - name: created_at
+        data_type: timestamp without time zone
+        description: Order creation timestamp, recorded in UTC.
+      - name: gmv_eur
+        data_type: numeric(16, 2)
+        description: Current order item price in euros, excluding shipping.
+      - name: prior_order_count
+        data_type: bigint
+        description: Number of earlier submitted orders by the buyer, regardless of status.
+      - name: prior_submitted_gmv_eur
+        data_type: numeric(16, 2)
+        description: >-
+          Sum of earlier submitted order item prices in euros, regardless of
+          their current status; excludes the current order and shipping.
+      - name: buyer_segment_at_order
+        data_type: text
+        description: >-
+          Buyer segment at order creation: new with no prior orders, vip with
+          at least EUR 5,000 of prior submitted GMV, otherwise returning.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [new, returning, vip]
+      - name: is_first_order
+        data_type: boolean
+        description: Whether the buyer had no earlier submitted order.

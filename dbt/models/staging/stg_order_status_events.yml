@@ -1,0 +1,34 @@
+version: 2
+
+models:
+  - name: stg_order_status_events
+    description: >-
+      Deduplicated status-change events from the tracking pipeline. Grain: one
+      row per event identifier, retaining the earliest ingested delivery.
+      The feed has known gaps and lateness and is not a complete order history.
+    columns:
+      - name: event_id
+        data_type: text
+        description: Identifier of the logical status-change event.
+        data_tests:
+          - not_null
+          - unique
+      - name: order_id
+        data_type: text
+        description: Identifier of the order whose status changed.
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_orders')
+              field: order_id
+      - name: status
+        data_type: text
+        description: Status recorded by the event, normalized to lowercase.
+      - name: event_ts
+        data_type: timestamp without time zone
+        description: Timestamp when the source reports the status change occurred.
+        data_tests:
+          - not_null
+      - name: ingested_at
+        data_type: timestamp without time zone
+        description: Timestamp when the retained event delivery entered the pipeline.

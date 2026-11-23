@@ -1,0 +1,62 @@
+version: 2
+
+models:
+  - name: int_orders_enriched
+    description: >-
+      Current orders enriched with item attributes and the order-date exchange
+      rate. Grain: one row per order when item and FX keys are unique. Euro
+      values are item price and shipping separately, rounded to cents.
+    columns:
+      - name: order_id
+        data_type: text
+        description: Unique order identifier.
+        data_tests:
+          - not_null
+          - unique
+      - name: buyer_id
+        data_type: text
+        description: Identifier of the buyer who placed the order.
+      - name: seller_id
+        data_type: text
+        description: Identifier of the seller offering the item.
+      - name: item_id
+        data_type: text
+        description: Identifier of the purchased item.
+      - name: created_at
+        data_type: timestamp without time zone
+        description: Order creation timestamp, recorded in UTC.
+      - name: status
+        data_type: text
+        description: Current order status from the backend.
+      - name: updated_at
+        data_type: timestamp without time zone
+        description: Timestamp of the latest update to the order, recorded in UTC.
+      - name: item_price
+        data_type: numeric(12, 2)
+        description: Item price in the order currency, excluding shipping.
+      - name: shipping_fee
+        data_type: numeric(12, 2)
+        description: Shipping fee in the order currency.
+      - name: currency
+        data_type: text
+        description: Order currency code.
+      - name: buyer_country
+        data_type: text
+        description: Buyer country code.
+      - name: category
+        data_type: text
+        description: Category of the purchased item.
+      - name: brand
+        data_type: text
+        description: Brand of the purchased item.
+      - name: rate_to_eur
+        data_type: numeric(12, 4)
+        description: Order-date multiplier converting the order currency to euros.
+      - name: gmv_eur
+        data_type: numeric(16, 2)
+        description: Item price converted to euros at the order-date rate, excluding shipping.
+        data_tests:
+          - not_null
+      - name: shipping_fee_eur
+        data_type: numeric(16, 2)
+        description: Shipping fee converted to euros at the order-date rate.

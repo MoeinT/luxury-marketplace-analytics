@@ -1,0 +1,63 @@
+name: luxury_marketplace_analytics
+version: "1.0.0"
+config-version: 2
+profile: luxury_marketplace_analytics
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+snapshot-paths: ["snapshots"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+clean-targets: ["target", "dbt_packages"]
+
+seeds:
+  luxury_marketplace_analytics:
+    +schema: raw
+    +quote_columns: false
+    orders:
+      +column_types:
+        order_id: text
+        buyer_id: text
+        seller_id: text
+        item_id: text
+        created_at: timestamp
+        status: text
+        updated_at: timestamp
+        item_price: numeric(12, 2)
+        shipping_fee: numeric(12, 2)
+        currency: text
+        buyer_country: text
+    order_status_events:
+      +column_types:
+        event_id: text
+        order_id: text
+        status: text
+        event_ts: timestamp
+        ingested_at: timestamp
+    items:
+      +column_types:
+        item_id: text
+        category: text
+        brand: text
+    fx_rates:
+      +column_types:
+        rate_date: date
+        currency: text
+        rate_to_eur: numeric(12, 4)
+    finance_monthly_gmv:
+      +column_types:
+        month: text
+        gmv_eur: numeric(16, 2)
+        closed_on: date
+
+models:
+  luxury_marketplace_analytics:
+    staging:
+      +schema: staging
+      +materialized: view
+    intermediate:
+      +schema: intermediate
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table

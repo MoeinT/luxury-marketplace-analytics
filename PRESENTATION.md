@@ -109,15 +109,20 @@ close policy—not query tuning.
 
 ## 7. Cycle repair — 2 minutes
 
-**Before**
+Arrows point from an upstream model to its downstream consumer. These graphs
+focus on the models involved in the cycle; the original graph is cyclic, not
+a DAG.
+
+**Before: cyclic dependencies**
 
 ```mermaid
 graph LR
   O[stg_orders] --> F[fct_orders]
-  F --> R[int_order_risk]
+  O --> R[int_order_risk]
   F --> B[dim_buyers]
-  R --> B[dim_buyers]
+  B --> R
   B --> F
+  R --> F
 ```
 
 `fct_orders` needs both `dim_buyers` and `int_order_risk`; risk needs the
@@ -125,7 +130,7 @@ dimension; the dimension aggregates the fact. dbt refuses this because it
 cannot topologically order a cyclic DAG. A hard-coded relation hides the edge
 from dbt and breaks lineage and reliable environment selection.
 
-**After**
+**After: acyclic dependencies**
 
 ```mermaid
 graph LR

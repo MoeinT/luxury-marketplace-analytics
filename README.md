@@ -257,14 +257,37 @@ time.
 
 ## Task 3 — cycle repair
 
-The original chain is `fct_orders -> int_order_risk -> dim_buyers ->
-fct_orders`: the fact needs the risk and buyer models, risk needs the buyer
-model, and the buyer model aggregates the fact. dbt must compile a directed
-acyclic graph to determine build order, so it rejects this genuine cycle.
+The original chain of `ref()` dependencies is `fct_orders -> int_order_risk
+-> dim_buyers -> fct_orders`: the fact needs the risk and buyer models, risk
+needs the buyer model, and the buyer model aggregates the fact. dbt must
+compile a directed acyclic graph to determine build order, so it rejects this
+genuine cycle.
 Replacing `ref('fct_orders')` with `analytics.marts.fct_orders` only hides the
 edge from dbt. It removes dependency ordering, lineage, environment/schema
 resolution, and reliable selection/build behavior; stale or missing tables can
 then produce a green-looking build with incorrect results.
+
+The graphs below focus on the cycle-related models. Here each arrow points
+from an upstream model to a downstream consumer.
+
+**Before: cyclic graph (not a DAG)**
+
+```text
+stg_orders     -> fct_orders, int_order_risk
+fct_orders     -> dim_buyers
+dim_buyers     -> fct_orders, int_order_risk
+int_order_risk -> fct_orders
+```
+
+**After: acyclic graph**
+
+```text
+stg_orders, stg_items, stg_fx_rates -> int_orders_enriched
+int_orders_enriched -> int_buyer_order_features, dim_buyers, fct_orders
+int_buyer_order_features -> int_order_risk, fct_orders
+dim_buyers, int_order_risk -> fct_orders
+fct_orders -> mart_ops_daily_gmv
+```
 
 The refactor computes prior-order attributes in
 `int_buyer_order_features`, before the fact and dimensions. `dim_buyers` is a
@@ -285,5 +308,6 @@ The risk-rule test independently verifies the threshold and first-order rule.
 ## Task 4 — presentation and AI note
 
 See [`PRESENTATION.md`](PRESENTATION.md) for a 20-minute presentation outline
-with a two-minute cycle section, DAGs, options, costs, and decision-changing
-evidence. [`AI_USAGE.md`](AI_USAGE.md) is the AI-use disclosure.
+with a two-minute cycle section, diagrams, options, costs, and decision-changing
+evidence. The diagrams there use Mermaid; the text graphs above work in any
+Markdown viewer. [`AI_USAGE.md`](AI_USAGE.md) is the AI-use disclosure.

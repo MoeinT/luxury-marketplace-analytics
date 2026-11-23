@@ -32,5 +32,19 @@ services:
         condition: service_healthy
     command: ["build", "--profiles-dir", "."]
 
+  pgadmin:
+    image: dbeaver/cloudbeaver:latest
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      CLOUDBEAVER_SERVER_PUBLIC_URL: "http://localhost:8080"
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
